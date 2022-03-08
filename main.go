@@ -40,6 +40,7 @@ func init() {
 }
 
 var done chan bool
+var serverReady bool
 
 func main() {
 	flag.Parse()
@@ -47,7 +48,15 @@ func main() {
 	done = make(chan bool)
 	if flagRecvPort > 0 {
 		go runServer()
-		time.Sleep(200 * time.Millisecond)
+		for {
+			if serverReady {
+				break
+			}
+			time.Sleep(5 * time.Millisecond)
+			client := osc.NewClient(flagRecvHost, flagRecvPort)
+			msg := osc.NewMessage("/is_ready")
+			client.Send(msg)
+		}
 		err = run()
 		<-done
 	} else {
@@ -64,8 +73,10 @@ func runServer() {
 		osc.PrintMessage(msg)
 	})
 	d.AddMsgHandler("/quit", func(msg *osc.Message) {
-		osc.PrintMessage(msg)
 		done <- true
+	})
+	d.AddMsgHandler("/is_ready", func(msg *osc.Message) {
+		serverReady = true
 	})
 
 	server := &osc.Server{
