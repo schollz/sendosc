@@ -47,7 +47,7 @@ func main() {
 	done = make(chan bool)
 	if flagRecvPort > 0 {
 		go runServer()
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 		err = run()
 		<-done
 	} else {
