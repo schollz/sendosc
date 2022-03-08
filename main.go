@@ -2,14 +2,15 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"strconv"
 
 	"github.com/hypebeast/go-osc/osc"
 )
 
-var flagHost, flagAddress string
-var flagPort int
+var flagRecvHost, flagRecvAddress, flagHost, flagAddress string
+var flagRecvPort, flagPort int
 
 type arrayFlags []string
 
@@ -31,14 +32,46 @@ func init() {
 	flag.Var(&flagInts, "i", "integer to send")
 	flag.Var(&flagFloats, "f", "float to send")
 	flag.Var(&flagStrings, "s", "integer to send")
+	flag.StringVar(&flagRecvHost, "recv-host", "localhost", "osc host")
+	flag.IntVar(&flagRecvPort, "recv-port", -1, "port to use (active if port>0)")
+	flag.StringVar(&flagRecvAddress, "recv-addr", "/osc/address", "osc address")
+
 }
+
+var done chan bool
 
 func main() {
 	flag.Parse()
-	err := run()
+	var err error
+	done = make(chan bool)
+	if flagRecvPort > 0 {
+		go func() {
+			runServer()
+		}()
+		err = run()
+		<-done
+	} else {
+		err = run()
+	}
 	if err != nil {
 		log.Printf("error: %s", err.Error())
 	}
+}
+
+func runServer() {
+	d := osc.NewStandardDispatcher()
+	d.AddMsgHandler(flagRecvAddress, func(msg *osc.Message) {
+		osc.PrintMessage(msg)
+	})
+	d.AddMsgHandler("/quit", func(msg *osc.Message) {
+		done <- true
+	})
+
+	server := &osc.Server{
+		Addr:       fmt.Sprintf("%s:%d", flagRecvHost, flagRecvPort),
+		Dispatcher: d,
+	}
+	server.ListenAndServe()
 }
 
 func run() (err error) {
