@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/hypebeast/go-osc/osc"
 )
@@ -45,10 +46,9 @@ func main() {
 	var err error
 	done = make(chan bool)
 	if flagRecvPort > 0 {
-		go func() {
-			runServer()
-			err = run()
-		}()
+		go runServer()
+		time.Sleep(50 * time.Millisecond)
+		err = run()
 		<-done
 	} else {
 		err = run()
