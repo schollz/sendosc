@@ -47,8 +47,8 @@ func main() {
 	if flagRecvPort > 0 {
 		go func() {
 			runServer()
+			err = run()
 		}()
-		err = run()
 		<-done
 	} else {
 		err = run()
@@ -64,6 +64,7 @@ func runServer() {
 		osc.PrintMessage(msg)
 	})
 	d.AddMsgHandler("/quit", func(msg *osc.Message) {
+		osc.PrintMessage(msg)
 		done <- true
 	})
 
